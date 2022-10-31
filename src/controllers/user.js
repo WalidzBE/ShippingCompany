@@ -1,7 +1,5 @@
 const { promisify } = require('util');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-const nodemailerSendgrid = require('nodemailer-sendgrid');
 const passport = require('passport');
 const _ = require('lodash');
 const validator = require('validator');
@@ -9,59 +7,6 @@ const mailChecker = require('mailchecker');
 const User = require('../models/User');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
-
-/**
- * Helper Function to Send Mail.
- */
-const sendMail = (settings) => {
-  let transportConfig;
-  if (process.env.SENDGRID_API_KEY) {
-    transportConfig = nodemailerSendgrid({
-      apiKey: process.env.SENDGRID_API_KEY
-    });
-  } else {
-    transportConfig = {
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD
-      }
-    };
-  }
-  let transporter = nodemailer.createTransport(transportConfig);
-
-  return transporter.sendMail(settings.mailOptions)
-    .then(() => {
-      settings.req.flash(settings.successfulType, { msg: settings.successfulMsg });
-    })
-    .catch((err) => {
-      if (err.message === 'self signed certificate in certificate chain') {
-        console.log('WARNING: Self signed certificate in certificate chain. Retrying with the self signed certificate. Use a valid certificate if in production.');
-        transportConfig.tls = transportConfig.tls || {};
-        transportConfig.tls.rejectUnauthorized = false;
-        transporter = nodemailer.createTransport(transportConfig);
-        return transporter.sendMail(settings.mailOptions)
-          .then(() => {
-            settings.req.flash(settings.successfulType, { msg: settings.successfulMsg });
-          });
-      }
-      console.log(settings.loggingError, err);
-      settings.req.flash(settings.errorType, { msg: settings.errorMsg });
-      return err;
-    });
-};
-
-/**
- * GET /login
- * Login page.
- */
-exports.getLogin = (req, res) => {
-  if (req.user) {
-    return res.redirect('/');
-  }
-  res.render('account/login', {
-    title: 'Login'
-  });
-};
 
 /**
  * POST /login
@@ -93,6 +38,7 @@ exports.postLogin = (req, res, next) => {
 };
 
 /**
+ * changed GET /logout to POST /logout
  * GET /logout
  * Log out.
  */
@@ -106,22 +52,10 @@ exports.logout = (req, res) => {
 };
 
 /**
- * GET /signup
- * Signup page.
- */
-exports.getSignup = (req, res) => {
-  if (req.user) {
-    return res.redirect('/');
-  }
-  res.render('account/signup', {
-    title: 'Create Account'
-  });
-};
-
-/**
  * POST /signup
  * Create a new local account.
  */
+// todo check flash
 exports.postSignup = (req, res, next) => {
   const validationErrors = [];
   if (!validator.isEmail(req.body.email)) validationErrors.push({ msg: 'Please enter a valid email address.' });
@@ -129,7 +63,7 @@ exports.postSignup = (req, res, next) => {
   if (req.body.password !== req.body.confirmPassword) validationErrors.push({ msg: 'Passwords do not match' });
 
   if (validationErrors.length) {
-    req.flash('errors', validationErrors);
+    // req.flash('errors', validationErrors);
     return res.redirect('/signup');
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
