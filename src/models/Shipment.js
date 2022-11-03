@@ -1,26 +1,26 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const User = sequelize.define('User', {
-    firstName: {
+  const Shipment = sequelize.define('Shipment', {
+    waybill: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    customerAddress: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    lastName: {
+    customerName: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    email: {
-      type: DataTypes.STRING,
-      unique: true,
-      validate: { isEmail: { msg: 'wrong format email' }, },
-      allowNull: false
-    },
-    password: {
+    customerPhoneNumber: {
       type: DataTypes.STRING,
       allowNull: false
     }
   });
 
-  return User;
+  return Shipment;
 };
